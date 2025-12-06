@@ -170,11 +170,11 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background font-['Inter']">
-      <div className="w-80 border-r border-border flex flex-col">
+    <div className="flex h-screen bg-background/80 backdrop-blur-sm font-['Inter']">
+      <div className="w-80 border-r border-border flex flex-col bg-card/90 backdrop-blur-md">
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold">Сообщения</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">Waffels</h1>
             <div className="flex gap-2">
               <Sheet>
                 <SheetTrigger asChild>
@@ -327,7 +327,7 @@ const Index = () => {
                       </p>
                     </div>
                     {chat.unread > 0 && (
-                      <Badge className="bg-primary text-primary-foreground">
+                      <Badge className="bg-gradient-to-br from-orange-500 to-yellow-500 text-white border-0">
                         {chat.unread}
                       </Badge>
                     )}
@@ -338,10 +338,10 @@ const Index = () => {
         </ScrollArea>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-background/60 backdrop-blur-sm">
         {activeChat ? (
           <>
-            <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="p-4 border-b border-border flex items-center justify-between bg-card/70 backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar>
@@ -392,10 +392,10 @@ const Index = () => {
                     className={`flex ${message.sent ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                      className={`max-w-[70%] rounded-2xl px-4 py-2 shadow-md ${
                         message.sent
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-card'
+                          ? 'bg-gradient-to-br from-orange-500 to-yellow-500 text-white'
+                          : 'bg-card/90 backdrop-blur-sm'
                       }`}
                     >
                       {message.type === 'text' && <p>{message.text}</p>}
@@ -415,7 +415,7 @@ const Index = () => {
                       <span
                         className={`text-xs mt-1 block ${
                           message.sent
-                            ? 'text-primary-foreground/70'
+                            ? 'text-white/80'
                             : 'text-muted-foreground'
                         }`}
                       >
@@ -427,7 +427,7 @@ const Index = () => {
               </div>
             </ScrollArea>
 
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-border bg-card/70 backdrop-blur-md">
               <div className="max-w-3xl mx-auto flex gap-2">
                 <input
                   type="file"
@@ -454,7 +454,7 @@ const Index = () => {
                   }}
                   className="flex-1"
                 />
-                <Button onClick={handleSendMessage} size="icon">
+                <Button onClick={handleSendMessage} size="icon" className="bg-gradient-to-br from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                   <Icon name="Send" size={20} />
                 </Button>
               </div>
@@ -471,7 +471,7 @@ const Index = () => {
       </div>
 
       {isCallActive && activeChat && (
-        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-gradient-to-br from-orange-500/95 to-yellow-500/95 backdrop-blur-lg z-50 flex items-center justify-center">
           <div className="w-full max-w-md p-8 space-y-6 text-center">
             <Avatar className="w-32 h-32 mx-auto">
               <AvatarImage src={activeChat.avatar} />
@@ -481,8 +481,8 @@ const Index = () => {
             </Avatar>
             
             <div>
-              <h2 className="text-2xl font-semibold mb-2">{activeChat.name}</h2>
-              <p className="text-muted-foreground text-lg">
+              <h2 className="text-2xl font-semibold mb-2 text-white">{activeChat.name}</h2>
+              <p className="text-white/80 text-lg">
                 {formatCallDuration(callDuration)}
               </p>
             </div>
@@ -492,7 +492,7 @@ const Index = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="w-14 h-14 rounded-full"
+                  className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 border-white/40 text-white"
                 >
                   <Icon name="VideoOff" size={24} />
                 </Button>
@@ -500,14 +500,14 @@ const Index = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="w-14 h-14 rounded-full"
+                className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 border-white/40 text-white"
               >
                 <Icon name="MicOff" size={24} />
               </Button>
               <Button
                 variant="destructive"
                 size="icon"
-                className="w-16 h-16 rounded-full"
+                className="w-16 h-16 rounded-full bg-red-500/90 hover:bg-red-600/90"
                 onClick={endCall}
               >
                 <Icon name="PhoneOff" size={28} />

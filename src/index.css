@@ -6,44 +6,51 @@
 
 @layer base {
   :root {
-    --background: 210 17% 11%;
-    --foreground: 210 12% 96%;
+    --background: 35 85% 95%;
+    --foreground: 25 50% 15%;
 
-    --card: 215 20% 15%;
-    --card-foreground: 210 12% 96%;
+    --card: 40 90% 96%;
+    --card-foreground: 25 50% 15%;
 
-    --popover: 215 20% 15%;
-    --popover-foreground: 210 12% 96%;
+    --popover: 40 90% 96%;
+    --popover-foreground: 25 50% 15%;
 
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 12% 96%;
+    --primary: 30 95% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 20% 20%;
-    --secondary-foreground: 210 12% 96%;
+    --secondary: 45 100% 65%;
+    --secondary-foreground: 25 50% 15%;
 
-    --muted: 215 20% 20%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 40 80% 88%;
+    --muted-foreground: 25 30% 45%;
 
-    --accent: 199 89% 48%;
-    --accent-foreground: 210 12% 96%;
+    --accent: 30 95% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 12% 96%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 199 89% 48%;
+    --border: 40 70% 85%;
+    --input: 40 70% 90%;
+    --ring: 30 95% 55%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 215 20% 13%;
-    --sidebar-foreground: 210 12% 96%;
-    --sidebar-primary: 199 89% 48%;
-    --sidebar-primary-foreground: 210 12% 96%;
-    --sidebar-accent: 215 20% 18%;
-    --sidebar-accent-foreground: 210 12% 96%;
-    --sidebar-border: 215 20% 20%;
-    --sidebar-ring: 199 89% 48%;
+    --sidebar-background: 35 80% 92%;
+    --sidebar-foreground: 25 50% 15%;
+    --sidebar-primary: 30 95% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 85% 88%;
+    --sidebar-accent-foreground: 25 50% 15%;
+    --sidebar-border: 40 70% 85%;
+    --sidebar-ring: 30 95% 55%;
+  }
+
+  body {
+    background-image: url("https://cdn.poehali.dev/projects/691d4d39-ce4c-4ab9-b9a0-50c5c88711ab/files/f9643528-5cec-4967-813e-f3bd47565c07.jpg");
+    background-size: 400px 400px;
+    background-repeat: repeat;
+    background-attachment: fixed;
   }
 }
 
