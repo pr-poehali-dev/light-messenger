@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,9 +28,12 @@ interface Chat {
 
 interface Message {
   id: number;
-  text: string;
+  text?: string;
   time: string;
   sent: boolean;
+  type: 'text' | 'image' | 'file';
+  fileName?: string;
+  fileUrl?: string;
 }
 
 const Index = () => {
@@ -87,11 +90,15 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: 'Привет! Как дела?', time: '14:20', sent: false },
-    { id: 2, text: 'Привет! Всё отлично, спасибо!', time: '14:21', sent: true },
-    { id: 3, text: 'Есть идея для нового проекта', time: '14:22', sent: false },
-    { id: 4, text: 'Отличная идея! Давай обсудим завтра', time: '14:23', sent: false },
+    { id: 1, text: 'Привет! Как дела?', time: '14:20', sent: false, type: 'text' },
+    { id: 2, text: 'Привет! Всё отлично, спасибо!', time: '14:21', sent: true, type: 'text' },
+    { id: 3, text: 'Есть идея для нового проекта', time: '14:22', sent: false, type: 'text' },
+    { id: 4, text: 'Отличная идея! Давай обсудим завтра', time: '14:23', sent: false, type: 'text' },
   ]);
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [callType, setCallType] = useState<'audio' | 'video' | null>(null);
+  const [callDuration, setCallDuration] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredChats = chats.filter(
     (chat) =>
@@ -111,10 +118,55 @@ const Index = () => {
             minute: '2-digit',
           }),
           sent: true,
+          type: 'text',
         },
       ]);
       setMessageText('');
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const isImage = file.type.startsWith('image/');
+      const fileUrl = URL.createObjectURL(file);
+      setMessages([
+        ...messages,
+        {
+          id: messages.length + 1,
+          time: new Date().toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          sent: true,
+          type: isImage ? 'image' : 'file',
+          fileName: file.name,
+          fileUrl: fileUrl,
+        },
+      ]);
+    }
+  };
+
+  const startCall = (type: 'audio' | 'video') => {
+    setCallType(type);
+    setIsCallActive(true);
+    setCallDuration(0);
+    const interval = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  };
+
+  const endCall = () => {
+    setIsCallActive(false);
+    setCallType(null);
+    setCallDuration(0);
+  };
+
+  const formatCallDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -289,26 +341,46 @@ const Index = () => {
       <div className="flex-1 flex flex-col">
         {activeChat ? (
           <>
-            <div className="p-4 border-b border-border flex items-center gap-3">
-              <div className="relative">
-                <Avatar>
-                  <AvatarImage src={activeChat.avatar} />
-                  <AvatarFallback>
-                    {activeChat.name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')}
-                  </AvatarFallback>
-                </Avatar>
-                {activeChat.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
-                )}
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Avatar>
+                    <AvatarImage src={activeChat.avatar} />
+                    <AvatarFallback>
+                      {activeChat.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  {activeChat.online && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="font-semibold">{activeChat.name}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {activeChat.online ? 'В сети' : 'Был(а) недавно'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-semibold">{activeChat.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {activeChat.online ? 'В сети' : 'Был(а) недавно'}
-                </p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => startCall('audio')}
+                  disabled={!activeChat.online}
+                >
+                  <Icon name="Phone" size={20} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => startCall('video')}
+                  disabled={!activeChat.online}
+                >
+                  <Icon name="Video" size={20} />
+                </Button>
               </div>
             </div>
 
@@ -326,7 +398,20 @@ const Index = () => {
                           : 'bg-card'
                       }`}
                     >
-                      <p>{message.text}</p>
+                      {message.type === 'text' && <p>{message.text}</p>}
+                      {message.type === 'image' && (
+                        <img 
+                          src={message.fileUrl} 
+                          alt="Изображение" 
+                          className="rounded-lg max-w-sm"
+                        />
+                      )}
+                      {message.type === 'file' && (
+                        <div className="flex items-center gap-2">
+                          <Icon name="File" size={20} />
+                          <span className="text-sm">{message.fileName}</span>
+                        </div>
+                      )}
                       <span
                         className={`text-xs mt-1 block ${
                           message.sent
@@ -344,7 +429,18 @@ const Index = () => {
 
             <div className="p-4 border-t border-border">
               <div className="max-w-3xl mx-auto flex gap-2">
-                <Button variant="ghost" size="icon">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept="image/*,application/pdf,.doc,.docx,.txt"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Icon name="Paperclip" size={20} />
                 </Button>
                 <Input
@@ -373,6 +469,53 @@ const Index = () => {
           </div>
         )}
       </div>
+
+      {isCallActive && activeChat && (
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="w-full max-w-md p-8 space-y-6 text-center">
+            <Avatar className="w-32 h-32 mx-auto">
+              <AvatarImage src={activeChat.avatar} />
+              <AvatarFallback className="text-4xl">
+                {activeChat.name.split(' ').map((n) => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">{activeChat.name}</h2>
+              <p className="text-muted-foreground text-lg">
+                {formatCallDuration(callDuration)}
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-4 pt-8">
+              {callType === 'video' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-14 h-14 rounded-full"
+                >
+                  <Icon name="VideoOff" size={24} />
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="icon"
+                className="w-14 h-14 rounded-full"
+              >
+                <Icon name="MicOff" size={24} />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="w-16 h-16 rounded-full"
+                onClick={endCall}
+              >
+                <Icon name="PhoneOff" size={28} />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
