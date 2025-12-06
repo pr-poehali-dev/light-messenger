@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Search users and channels",
+      "method": "GET",
+      "path": "/?q=test",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "users": "array",
+        "channels": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

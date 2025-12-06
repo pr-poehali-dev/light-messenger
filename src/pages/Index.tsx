@@ -1,4 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import AuthForm from '@/components/AuthForm';
+import CreateChannelDialog from '@/components/CreateChannelDialog';
+import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +18,12 @@ import {
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+
 interface Chat {
   id: number;
   name: string;
@@ -24,6 +33,12 @@ interface Chat {
   unread: number;
   online: boolean;
   archived?: boolean;
+  isChannel?: boolean;
+}
+
+interface SearchResult {
+  users: { id: number; username: string; email: string }[];
+  channels: { id: number; name: string; description: string }[];
 }
 
 interface Message {
@@ -37,56 +52,112 @@ interface Message {
 }
 
 const Index = () => {
-  const [chats] = useState<Chat[]>([
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [chats, setChats] = useState<Chat[]>([
     {
       id: 1,
-      name: 'Анна Смирнова',
+      name: 'Waffels Общий чат',
       avatar: '',
-      lastMessage: 'Отличная идея! Давай обсудим завтра',
-      time: '14:23',
-      unread: 2,
-      online: true,
-    },
-    {
-      id: 2,
-      name: 'Дмитрий Волков',
-      avatar: '',
-      lastMessage: 'Отправил файлы',
-      time: '13:45',
+      lastMessage: 'Добро пожаловать в Waffels!',
+      time: 'Сейчас',
       unread: 0,
       online: true,
-    },
-    {
-      id: 3,
-      name: 'Команда проекта',
-      avatar: '',
-      lastMessage: 'Встреча перенесена на 15:00',
-      time: '12:10',
-      unread: 5,
-      online: false,
-    },
-    {
-      id: 4,
-      name: 'Мария Петрова',
-      avatar: '',
-      lastMessage: 'Спасибо за помощь!',
-      time: 'Вчера',
-      unread: 0,
-      online: false,
-    },
-    {
-      id: 5,
-      name: 'Старые чаты',
-      avatar: '',
-      lastMessage: 'Архивировано',
-      time: '2 дня назад',
-      unread: 0,
-      online: false,
-      archived: true,
+      isChannel: true,
     },
   ]);
+  const [searchResults, setSearchResults] = useState<SearchResult>({ users: [], channels: [] });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [newChannelDesc, setNewChannelDesc] = useState('');
+  const { toast } = useToast();
 
-  const [activeChat, setActiveChat] = useState<Chat | null>(chats[0]);
+  useEffect(() => {
+    const storedUser = localStorage.getItem('waffels_user');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleAuth = (user: User) => {
+    setCurrentUser(user);
+    localStorage.setItem('waffels_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('waffels_user');
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.length < 2) {
+      setSearchResults({ users: [], channels: [] });
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://functions.poehali.dev/43dbced9-3bed-40c2-bd40-cbe252402151?q=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+  };
+
+  const handleCreateChannel = async () => {
+    if (!currentUser) return;
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/34a010d7-f9de-44c1-b772-63ef0109cccc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': currentUser.id.toString(),
+        },
+        body: JSON.stringify({
+          action: 'create',
+          name: newChannelName,
+          description: newChannelDesc,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        toast({
+          title: 'Канал создан',
+          description: `Канал "${data.channel.name}" успешно создан!`,
+        });
+        setShowCreateChannel(false);
+        setChats([...chats, {
+          id: data.channel.id,
+          name: data.channel.name,
+          avatar: '',
+          lastMessage: 'Канал создан',
+          time: 'Сейчас',
+          unread: 0,
+          online: true,
+          isChannel: true,
+        }]);
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать канал',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (!currentUser) {
+    return <AuthForm onAuth={handleAuth} />;
+  }
+
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
@@ -100,11 +171,7 @@ const Index = () => {
   const [callDuration, setCallDuration] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const filteredChats = chats.filter(
-    (chat) =>
-      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChats = chats;
 
   const handleSendMessage = () => {
     if (messageText.trim()) {
@@ -174,8 +241,14 @@ const Index = () => {
       <div className="w-80 border-r border-border flex flex-col bg-card/90 backdrop-blur-md">
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">Waffels</h1>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">Waffels</h1>
+              <p className="text-xs text-muted-foreground">@{currentUser.username}</p>
+            </div>
             <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setShowCreateChannel(true)}>
+                <Icon name="Plus" size={20} />
+              </Button>
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -260,9 +333,13 @@ const Index = () => {
                             <Icon name="Lock" size={16} className="mr-2" />
                             Приватность
                           </Button>
-                          <Button variant="ghost" className="w-full justify-start">
-                            <Icon name="Palette" size={16} className="mr-2" />
-                            Оформление
+                          <Button 
+                            variant="ghost" 
+                            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={handleLogout}
+                          >
+                            <Icon name="LogOut" size={16} className="mr-2" />
+                            Выйти
                           </Button>
                         </div>
                       </div>
@@ -280,19 +357,75 @@ const Index = () => {
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
             <Input
-              placeholder="Поиск сообщений..."
+              placeholder="Поиск пользователей и каналов..."
               className="pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
           <div className="px-2 pb-4 space-y-1">
-            {filteredChats
-              .filter((chat) => !chat.archived)
-              .map((chat) => (
+            {isSearching && searchQuery.length >= 2 ? (
+              <>
+                {searchResults.users.length > 0 && (
+                  <div className="px-2 py-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">ПОЛЬЗОВАТЕЛИ</h3>
+                    {searchResults.users.map((user) => (
+                      <div
+                        key={`user-${user.id}`}
+                        className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">@{user.username}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {searchResults.channels.length > 0 && (
+                  <div className="px-2 py-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">КАНАЛЫ</h3>
+                    {searchResults.channels.map((channel) => (
+                      <div
+                        key={`channel-${channel.id}`}
+                        className="p-3 rounded-lg hover:bg-accent cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>
+                              <Icon name="Hash" size={20} />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{channel.name}</p>
+                            {channel.description && (
+                              <p className="text-xs text-muted-foreground">{channel.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {searchResults.users.length === 0 && searchResults.channels.length === 0 && (
+                  <div className="px-4 py-8 text-center text-muted-foreground">
+                    <Icon name="SearchX" size={48} className="mx-auto mb-2 opacity-50" />
+                    <p>Ничего не найдено</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              filteredChats
+                .filter((chat) => !chat.archived)
+                .map((chat) => (
                 <div
                   key={chat.id}
                   onClick={() => setActiveChat(chat)}
@@ -333,7 +466,8 @@ const Index = () => {
                     )}
                   </div>
                 </div>
-              ))}
+              ))
+            )}
           </div>
         </ScrollArea>
       </div>
@@ -516,6 +650,16 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      <CreateChannelDialog
+        open={showCreateChannel}
+        onOpenChange={setShowCreateChannel}
+        onSubmit={(name, desc) => {
+          setNewChannelName(name);
+          setNewChannelDesc(desc);
+          handleCreateChannel();
+        }}
+      />
     </div>
   );
 };

@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Create channel",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "body": {
+        "action": "create",
+        "name": "Test Channel",
+        "description": "Test description"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "success": true,
+        "channel": {
+          "name": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
